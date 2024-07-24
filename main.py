@@ -2,16 +2,24 @@ from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, CallbackContext
 import instaloader
 import logging
+import os
 
 # Настройка логирования
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# Информация о канале
+CHANNEL_ID = os.getenv('CHANNEL_ID')
+BOT_TOKEN = os.getenv('BOT_TOKEN')
+
 # Функция проверки подписки
 async def check_subscription(update: Update, context: CallbackContext) -> bool:
     user_id = update.effective_user.id
-    member = await context.bot.get_chat_member(chat_id=CHANNEL_ID, user_id=user_id)
-    return member.status in ['member', 'administrator', 'creator']
+    try:
+        member = await context.bot.get_chat_member(chat_id=CHANNEL_ID, user_id=user_id)
+        return member.status in ['member', 'administrator', 'creator']
+    except:
+        return False
 
 # Команда start
 async def start(update: Update, context: CallbackContext):
