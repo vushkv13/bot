@@ -6,7 +6,7 @@ import os
 import re
 
 # Настройка логирования
-logging.basicConfig(format='%(asctime)s - %(name)s - %(levellevel)s - %(message)s', level=logging.INFO)
+logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Информация о канале
@@ -19,7 +19,8 @@ async def check_subscription(update: Update, context: CallbackContext) -> bool:
     try:
         member = await context.bot.get_chat_member(chat_id=CHANNEL_ID, user_id=user_id)
         return member.status in ['member', 'administrator', 'creator']
-    except:
+    except Exception as e:
+        logger.error(f"Error checking subscription: {e}")
         return False
 
 # Команда start
@@ -52,7 +53,7 @@ async def handle_message(update: Update, context: CallbackContext):
                     await update.message.reply_text('Это не видео. Пожалуйста, отправьте ссылку на видео.')
             except Exception as e:
                 await update.message.reply_text('Не удалось скачать видео. Убедитесь, что ссылка корректна.')
-                logger.error(f"Error: {e}")
+                logger.error(f"Error downloading video: {e}")
         else:
             await update.message.reply_text('Пожалуйста, отправьте корректную ссылку на пост в Instagram.')
     else:
