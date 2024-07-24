@@ -34,8 +34,15 @@ async def start(update: Update, context: CallbackContext):
 
 # Функция для извлечения короткого кода из ссылки
 def extract_shortcode(url):
-    match = re.search(r"instagram\.com/(p|reel)/([^/]+)/", url)
-    return match.group(2) if match else None
+    # Extract shortcode from reel links
+    if re.match(r"instagram\.com/reel/([^/]+)/?igsh=[^/]+", url):
+        match = re.search(r"instagram\.com/reel/([^/]+)/", url)
+        return match.group(1)
+
+    # Extract shortcode from post links
+    else:
+        match = re.search(r"instagram\.com/(p|reel)/([^/]+)/", url)
+        return match.group(2) if match else None
 
 # Обработчик сообщений с ссылками
 async def handle_message(update: Update, context: CallbackContext):
