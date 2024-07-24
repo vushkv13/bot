@@ -3,9 +3,10 @@ from telegram.ext import Application, CommandHandler, MessageHandler, filters, C
 import instaloader
 import logging
 import os
+import re
 
 # Настройка логирования
-logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
+logging.basicConfig(format='%(asctime)s - %(name)s - %(levellevel)s - %(message)s', level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Информация о канале
@@ -30,14 +31,20 @@ async def start(update: Update, context: CallbackContext):
         reply_markup = InlineKeyboardMarkup(keyboard)
         await update.message.reply_text('Для использования бота, подпишитесь на канал.', reply_markup=reply_markup)
 
+# Функция для извлечения короткого кода из ссылки
+def extract_shortcode(url):
+    match = re.search(r"instagram\.com/(p|reel)/([^/]+)/", url)
+    return match.group(2) if match else None
+
 # Обработчик сообщений с ссылками
 async def handle_message(update: Update, context: CallbackContext):
     if await check_subscription(update, context):
         url = update.message.text
-        if "instagram.com" in url:
+        shortcode = extract_shortcode(url)
+        if shortcode:
             try:
                 loader = instaloader.Instaloader()
-                post = instaloader.Post.from_shortcode(loader.context, url.split('/')[-2])
+                post = instaloader.Post.from_shortcode(loader.context, shortcode)
                 video_url = post.video_url
                 if video_url:
                     await context.bot.send_video(chat_id=update.message.chat_id, video=video_url)
@@ -47,7 +54,7 @@ async def handle_message(update: Update, context: CallbackContext):
                 await update.message.reply_text('Не удалось скачать видео. Убедитесь, что ссылка корректна.')
                 logger.error(f"Error: {e}")
         else:
-            await update.message.reply_text('Пожалуйста, отправьте ссылку на пост в Instagram.')
+            await update.message.reply_text('Пожалуйста, отправьте корректную ссылку на пост в Instagram.')
     else:
         keyboard = [[InlineKeyboardButton("Подписаться", url=f'https://t.me/{CHANNEL_ID.lstrip("@")}')]]
         reply_markup = InlineKeyboardMarkup(keyboard)
