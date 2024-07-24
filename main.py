@@ -1,9 +1,9 @@
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import Application, CommandHandler, MessageHandler, filters, CallbackContext
 import instaloader
 import logging
 import os
 import re
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.ext import Application, CommandHandler, MessageHandler, filters, CallbackContext
 
 # Настройка логирования
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
@@ -34,7 +34,6 @@ async def start(update: Update, context: CallbackContext):
 
 # Функция для извлечения короткого кода из ссылки
 def extract_shortcode(url):
-    # Extract shortcode from reel links
     match = re.search(r"instagram\.com/(reel|p)/([^/]+)/", url)
     return match.group(2) if match else None
 
@@ -46,12 +45,22 @@ async def handle_message(update: Update, context: CallbackContext):
         if shortcode:
             try:
                 loader = instaloader.Instaloader()
+
+                # Вход в аккаунт
+                username = os.getenv('INSTAGRAM_USERNAME')
+                password = os.getenv('INSTAGRAM_PASSWORD')
+                if username and password:
+                    loader.login(username, password)
+
                 post = instaloader.Post.from_shortcode(loader.context, shortcode)
                 video_url = post.video_url
                 if video_url:
                     await context.bot.send_video(chat_id=update.message.chat_id, video=video_url)
                 else:
                     await update.message.reply_text('Это не видео. Пожалуйста, отправьте ссылку на видео.')
+            except instaloader.exceptions.InstaloaderException as e:
+                await update.message.reply_text('Не удалось скачать видео. Возможно, произошла ошибка с Instagram API.')
+                logger.error(f"InstaloaderException: {e}")
             except Exception as e:
                 await update.message.reply_text('Не удалось скачать видео. Убедитесь, что ссылка корректна.')
                 logger.error(f"Error downloading video: {e}")
