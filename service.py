@@ -1,6 +1,6 @@
 # service.py
 
-telegram_token = 'YOUR_TELEGRAM_TOKEN_HERE'
+TELEGRAM_TOKEN = 'YOUR_TELEGRAM_TOKEN_HERE'
 
 welcome_message = """
 Привет. Я помогу тебе скачать фото из Instagram.
