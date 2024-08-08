@@ -1,44 +1,31 @@
-from telegram import Update
-from telegram.ext import Application, CommandHandler, MessageHandler, filters, CallbackContext
-import os
-import instaloader
+# bot.py
 
-# Получение токена из переменной окружения
-TOKEN = os.getenv('TELEGRAM_TOKEN')
+import telebot
+import service
+from instagram_links import get_links_from_message, get_tuple_of_sources_by_account, get_source_by_link
+import logging
 
-def start(update: Update, context: CallbackContext):
-    update.message.reply_text('Привет! Отправь мне ссылку на рилс из Instagram.')
+bot = telebot.TeleBot(token=service.telegram_token)
 
-def download_reels(update: Update, context: CallbackContext):
-    url = update.message.text
-    if 'instagram.com/reel/' in url:
-        try:
-            L = instaloader.Instaloader()
-            post = instaloader.Post.from_shortcode(L.context, url.split('/')[-2])
-            L.download_post(post, target=f"./{post.shortcode}")
-            video_path = f"./{post.shortcode}/{post.shortcode}.mp4"
+@bot.message_handler(commands=['start', 'help'])
+def handle_start_help(message):
+    bot.send_message(message.chat.id, service.welcome_message)
 
-            if os.path.exists(video_path):
-                update.message.reply_video(video=open(video_path, 'rb'))
-                os.remove(video_path)
-                os.rmdir(f"./{post.shortcode}")
-            else:
-                update.message.reply_text('Не удалось найти видео.')
-        except Exception as e:
-            update.message.reply_text(f'Произошла ошибка: {e}')
-    else:
-        update.message.reply_text('Пожалуйста, отправьте корректную ссылку на рилс из Instagram.')
+@bot.message_handler(content_types=['text'])
+def handle_message(message):
+    account_links, image_links = get_links_from_message(message.text)
+    sources = []
+    for account_link in account_links:
+        sources_by_account_link = get_tuple_of_sources_by_account(account_link)
+        if sources_by_account_link:
+            sources.extend(sources_by_account_link)
+    for image_link in image_links:
+        source = get_source_by_link(image_link)
+        if source:
+            sources.append(source)
+    for i, link in enumerate(sources):
+        bot.send_message(message.chat.id, '<a href="{}">{}</a>'.format(link, i), parse_mode='HTML')
 
-def main():
-    # Создание приложения с помощью токена
-    application = Application.builder().token(TOKEN).build()
-
-    # Регистрация хендлеров
-    application.add_handler(CommandHandler('start', start))
-    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, download_reels))
-
-    # Запуск бота
-    application.run_polling()
-
-if __name__ == '__main__':
-    main()
+logger = telebot.logger
+telebot.logger.setLevel(logging.DEBUG)
+bot.polling(none_stop=True)
