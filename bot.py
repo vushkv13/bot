@@ -1,9 +1,9 @@
 from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, CallbackContext
-import requests
 import os
 import instaloader
 
+# Получение токена из переменной окружения
 TOKEN = os.getenv('TELEGRAM_TOKEN')
 
 def start(update: Update, context: CallbackContext):
@@ -30,11 +30,14 @@ def download_reels(update: Update, context: CallbackContext):
         update.message.reply_text('Пожалуйста, отправьте корректную ссылку на рилс из Instagram.')
 
 def main():
+    # Создание приложения с помощью токена
     application = Application.builder().token(TOKEN).build()
 
+    # Регистрация хендлеров
     application.add_handler(CommandHandler('start', start))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, download_reels))
 
+    # Запуск бота
     application.run_polling()
 
 if __name__ == '__main__':
