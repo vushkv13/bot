@@ -1,12 +1,10 @@
-from telegram import Update, InputFile
-from telegram.ext import Updater, CommandHandler, MessageHandler, filters, CallbackContext
+from telegram import Update
+from telegram.ext import Application, CommandHandler, MessageHandler, filters, CallbackContext
 import requests
 import os
 import instaloader
 
 TOKEN = os.getenv('TELEGRAM_TOKEN')
-updater = Updater(TOKEN, use_context=True)
-dispatcher = updater.dispatcher
 
 def start(update: Update, context: CallbackContext):
     update.message.reply_text('Привет! Отправь мне ссылку на рилс из Instagram.')
@@ -31,9 +29,13 @@ def download_reels(update: Update, context: CallbackContext):
     else:
         update.message.reply_text('Пожалуйста, отправьте корректную ссылку на рилс из Instagram.')
 
-dispatcher.add_handler(CommandHandler('start', start))
-dispatcher.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, download_reels))
+def main():
+    application = Application.builder().token(TOKEN).build()
+
+    application.add_handler(CommandHandler('start', start))
+    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, download_reels))
+
+    application.run_polling()
 
 if __name__ == '__main__':
-    updater.start_polling()
-    updater.idle()
+    main()
