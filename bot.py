@@ -1,5 +1,5 @@
 from telegram import Update, InputFile
-from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackContext
+from telegram.ext import Updater, CommandHandler, MessageHandler, filters, CallbackContext
 import requests
 import os
 import instaloader
@@ -32,7 +32,7 @@ def download_reels(update: Update, context: CallbackContext):
         update.message.reply_text('Пожалуйста, отправьте корректную ссылку на рилс из Instagram.')
 
 dispatcher.add_handler(CommandHandler('start', start))
-dispatcher.add_handler(MessageHandler(Filters.text & ~Filters.command, download_reels))
+dispatcher.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, download_reels))
 
 if __name__ == '__main__':
     updater.start_polling()
