@@ -28,4 +28,4 @@ def handle_message(message):
 
 logger = telebot.logger
 telebot.logger.setLevel(logging.DEBUG)
-bot.polling(none_stop=True)
+bot.polling(non_stop=True)  # Исправлено на non_stop
