@@ -1,31 +1,59 @@
-# bot.py
+from telegram import Update, Bot
+from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackContext
+import re
+import os
+import pyinstagram as pyi
 
-import telebot
-import service
-from instagram_links import get_links_from_message, get_tuple_of_sources_by_account, get_source_by_link
-import logging
+# Получение токена и данных для входа из переменных окружения
+TOKEN = os.getenv('TELEGRAM_TOKEN')
+USERNAME = os.getenv('INSTAGRAM_USERNAME')
+PASSWORD = os.getenv('INSTAGRAM_PASSWORD')
 
-bot = telebot.TeleBot(token=service.telegram_token)
+# Инициализация бота Telegram
+bot = Bot(token=TOKEN)
 
-@bot.message_handler(commands=['start', 'help'])
-def handle_start_help(message):
-    bot.send_message(message.chat.id, service.welcome_message)
+# Функция для получения видео по идентификатору медиа
+def get_video(media_id: str):
+    client = pyi.InstagramClient(username=USERNAME, password=PASSWORD)
+    client.login()
 
-@bot.message_handler(content_types=['text'])
-def handle_message(message):
-    account_links, image_links = get_links_from_message(message.text)
-    sources = []
-    for account_link in account_links:
-        sources_by_account_link = get_tuple_of_sources_by_account(account_link)
-        if sources_by_account_link:
-            sources.extend(sources_by_account_link)
-    for image_link in image_links:
-        source = get_source_by_link(image_link)
-        if source:
-            sources.append(source)
-    for i, link in enumerate(sources):
-        bot.send_message(message.chat.id, '<a href="{}">{}</a>'.format(link, i), parse_mode='HTML')
+    # Пример получения медиа по идентификатору
+    media = client.get_media(media_id)
+    if media.is_video:
+        return media.video_url
+    return None
 
-logger = telebot.logger
-telebot.logger.setLevel(logging.DEBUG)
-bot.polling(non_stop=True)  # Исправлено на non_stop
+# Обработчик команд Telegram
+def start(update: Update, context: CallbackContext):
+    update.message.reply_text("Привет! Отправь мне ссылку на reel из Instagram, и я верну видео.")
+
+# Обработчик сообщений Telegram
+def echo(update: Update, context: CallbackContext):
+    match = re.search(r'/reel/([^/?]+)', update.message.text)
+    if match:
+        media_id = match.group(1)
+        video_url = get_video(media_id)
+        if video_url:
+            bot.send_message(chat_id=update.effective_chat.id, text=f'Смотрите видео здесь: {video_url}')
+        else:
+            bot.send_message(chat_id=update.effective_chat.id, text='Не удалось получить видео. Попробуйте снова.')
+    else:
+        bot.send_message(chat_id=update.effective_chat.id, text='Пожалуйста, отправьте корректную ссылку на reel из Instagram.')
+
+# Создание обработчика команды /start
+start_handler = CommandHandler('start', start)
+
+# Создание обработчика сообщений
+echo_handler = MessageHandler(Filters.text & (~Filters.command), echo)
+
+# Инициализация Telegram-бота
+updater = Updater(TOKEN, use_context=True)
+
+# Добавление обработчиков команд и сообщений в Telegram-бота
+dispatcher = updater.dispatcher
+dispatcher.add_handler(start_handler)
+dispatcher.add_handler(echo_handler)
+
+# Запуск бота Telegram
+updater.start_polling()
+updater.idle()
