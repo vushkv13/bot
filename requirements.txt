@@ -1,2 +1,2 @@
 python-telegram-bot==13.7
-pyinstagram==0.1.2
+pyinstagram==0.2.1
