@@ -17,4 +17,4 @@ ENV PATH="/opt/venv/bin:$PATH"
 RUN pip install --no-cache-dir -r requirements.txt
 
 # 7. Определяем команду, которая будет выполнена при запуске контейнера
-CMD ["python", "main.py"]
+CMD ["python", "bot.py"]
